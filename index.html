@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Nieoficjalne kompendium i ściąga z komend Red Hat Enterprise Linux (RHEL) do egzaminu RHCSA (EX200).">
+    <title>RHEL &amp; RHCSA Cheat Sheet - ściąga administratora</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body id="top">
+
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="#start" class="brand-logo">
+                <span class="logo-prompt">[root@rhel]#</span>
+                <span class="logo-text">CheatSheet</span>
+            </a>
+
+            <nav class="main-nav">
+                <button class="menu-toggle" id="menu-toggle" type="button">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+
+                <ul class="nav-links" id="nav-links">
+                    <li><a href="#start" class="nav-link">Szukaj</a></li>
+                    <li><a href="#sciaga" class="nav-link">Moduły z komendami</a></li>
+                    <li><a href="#schematy" class="nav-link">Schematy</a></li>
+                    <li><a href="#faq" class="nav-link">FAQ</a></li>
+                    <li><a href="#resources" class="nav-link">Źródła</a></li>
+                </ul>
+            </nav>
+
+            <button class="theme-toggle" id="theme-toggle" type="button">
+                <span id="theme-icon">☀️</span>
+                <span id="theme-label">Jasny</span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+
+        <section class="hero-section" id="start">
+            <div class="container hero-container">
+                <p class="hero-badge">Egzamin EX200 - Red Hat Enterprise Linux 9</p>
+                <h1>Poradniki dla administratora RHEL</h1>
+                <p class="hero-subtitle">
+                    Szybkie przypomnienie najważniejszych komend i struktur plików konfiguracyjnych wymaganych na
+                    egzaminie RHCSA.
+                </p>
+
+                <div class="search-panel">
+                    <input type="search" id="search-input" class="search-input"
+                        placeholder="Wpisz komendę lub usługę (np. lvextend, semanage, podman, fstab, chmod)...">
+
+                    <div class="filter-bar">
+                        <button type="button" class="filter-btn active" data-category="all">Wszystkie tematy</button>
+                        <button type="button" class="filter-btn" data-category="storage">LVM</button>
+                        <button type="button" class="filter-btn" data-category="security">SELinux i Firewall</button>
+                        <button type="button" class="filter-btn" data-category="containers">Podman i Systemd</button>
+                        <button type="button" class="filter-btn" data-category="users">User management</button>
+                        <button type="button" class="filter-btn" data-category="network">Sieć i Rozruch</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="cheatsheet-section" id="sciaga">
+            <div class="container">
+                <div class="section-heading">
+                    <h2>Moduły i procedury na egzamin</h2>
+                    <p id="results-counter">Wyświetlanie wszystkich modułów</p>
+                </div>
+
+                <div class="cheatsheet-grid" id="cheatsheet-grid">
+                </div>
+
+                <div class="no-results" id="no-results" hidden>
+                    <h3>Nie znaleziono pasującego tematu</h3>
+                    <p>Spróbuj wpisać inne zagadnienie (np. <code>xfs</code>, <code>cron</code>, <code>nmcli</code>) lub
+                        zresetuj filtr.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="schemas-section" id="schematy">
+            <div class="container">
+                <div class="section-heading">
+                    <h2>Schematy architektury</h2>
+                    <p>Diagramy z dokumentacji RHEL 9 obrazujące LVM oraz SELinux.</p>
+                </div>
+
+                <div class="schemas-grid">
+                    <article class="schema-card">
+                        <figure class="schema-figure">
+                            <img src="assets/lvm-architecture.png"
+                                alt="Oficjalny schemat komponentów LVM pokazujący podział na Physical Volumes, Volume Group oraz Logical Volumes"
+                                width="600" height="360">
+                            <figcaption>Rys. 1. Elementy LVM (Źródło: Red Hat Enterprise Linux 9
+                                Documentation).</figcaption>
+                        </figure>
+                        <div class="schema-content">
+                            <h3>Warstwy abstrakcji w LVM</h3>
+                            <p>Fizyczne dyski lub partycje (<em>Physical Volumes</em>) są łączone w jedną wspólną pulę
+                                pamięci (<em>Volume Group</em>), z której następnie wydziela się wolumeny logiczne
+                                (<em>Logical Volumes</em>) pod systemy plików XFS lub ext4.</p>
+                        </div>
+                    </article>
+
+                    <article class="schema-card">
+                        <figure class="schema-figure">
+                            <img src="assets/selinux-workflow.png"
+                                alt="Schemat izolacji procesów Apache oraz MariaDB za pomocą polityk bezpieczeństwa SELinux"
+                                width="600" height="360">
+                            <figcaption>Rys. 2. Przykład izolacji Apache oraz MariaDB przez SELinux (Źródło: Red
+                                Hat Enterprise Linux 9 Documentation).</figcaption>
+                        </figure>
+                        <div class="schema-content">
+                            <h3>Izolacja procesów i domen SELinux</h3>
+                            <p>Polityki SELinux zamykają usługi w osobnych domenach. Nawet jeśli proces serwera Apache
+                                zostanie przejęty przez złośliwy skrypt, SELinux zablokuje mu dostęp do katalogu
+                                <code>/tmp</code> oraz plików bazy danych MariaDB.
+                            </p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+        <section class="faq-section" id="faq">
+            <div class="container">
+                <div class="section-heading">
+                    <h2>Częste pytania i pułapki egzaminacyjne (FAQ)</h2>
+                    <p>Najważniejsze zasady przed zakończeniem pracy na maszynie egzaminacyjnej.</p>
+                </div>
+
+                <div class="faq-list">
+                    <article class="faq-item">
+                        <h3>
+                            <button type="button" class="faq-trigger">
+                                <span>Jak przetestować plik /etc/fstab przed restartem maszyny?</span>
+                                <span class="faq-icon">+</span>
+                            </button>
+                        </h3>
+                        <div class="faq-panel" hidden>
+                            <p>Błędny wpis w <code>/etc/fstab</code> zatrzyma start systemu w trybie <em>emergency
+                                    mode</em>. Po każdej edycji pliku należy wykonać polecenia
+                                <code>systemctl daemon-reload</code> oraz <code>mount -a</code>. Jeśli polecenie nie
+                                zwróci błędu, konfiguracja jest poprawna.
+                            </p>
+                        </div>
+                    </article>
+
+                    <article class="faq-item">
+                        <h3>
+                            <button type="button" class="faq-trigger">
+                                <span>Czy system plików XFS można zmniejszyć?</span>
+                                <span class="faq-icon">+</span>
+                            </button>
+                        </h3>
+                        <div class="faq-panel" hidden>
+                            <p>Domyślnie w RHEL system plików <strong>XFS</strong> wspiera wyłącznie powiększanie.
+                                Zmniejszanie rozmiaru jest możliwe dla systemu plików
+                                <code>ext4</code>.
+                            </p>
+                        </div>
+                    </article>
+
+                    <article class="faq-item">
+                        <h3>
+                            <button type="button" class="faq-trigger">
+                                <span>Gdzie szukać przykładów składni, jeśli zapomnę parametrów polecenia na
+                                    egzaminie?</span>
+                                <span class="faq-icon">+</span>
+                            </button>
+                        </h3>
+                        <div class="faq-panel" hidden>
+                            <p>Korzystaj z podręcznika systemowego. Wpisz
+                                <code>man -k słowo_kluczowe</code>, a po otwarciu
+                                przewiń na sam dół (klawisz <code>G</code>), gdzie w sekcji <strong>EXAMPLES</strong>
+                                znajdują się gotowe wzorce komend (np. w <code>man semanage-fcontext</code>).
+                            </p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer" id="resources">
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <h2><span class="logo-prompt">[root@rhel]#</span> CheatSheet</h2>
+                <p>
+                    Nieoficjalne źródło wiedzy o RHEL przygotowane w ramach projektu z przedmiotu Aplikacje
+                    Internetowe.
+                </p>
+                <p class="legal-disclaimer">
+                    <strong>Nota prawna:</strong> Strona nie jest oficjalnie
+                    powiązana z firmą Red Hat, Inc.
+                    Nazwy Red Hat, RHEL oraz RHCSA są zastrzeżonymi znakami towarowymi firmy Red Hat, Inc.
+                </p>
+            </div>
+
+            <div class="footer-nav">
+                <h3>Przydatne odnośniki zewnętrzne</h3>
+                <ul>
+                    <li>
+                        <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9" target="_blank"
+                            rel="noopener noreferrer">
+                            Dokumentacja Red Hat Enterprise Linux 9
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.redhat.com/en/services/training/ex200-red-hat-certified-system-administrator-rhcsa-exam"
+                            target="_blank" rel="noopener noreferrer">
+                            Oficjalny zakres wymagań egzaminu EX200
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://man7.org/linux/man-pages/" target="_blank" rel="noopener noreferrer">
+                            Linux man-pages online
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/kitajk/redhat-cheatsheet" target="_blank" rel="noopener noreferrer">
+                            Kod projektu na GitHubie (kitajk)
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="container footer-bottom">
+            <p>&copy; 2026 Jakub Kita (kitajk). Projekt - Aplikacje Internetowe.</p>
+            <a href="#top" class="back-to-top">Do góry</a>
+        </div>
+    </footer>
+
+    <script src="js/main.js" defer></script>
+</body>
+
+</html>
