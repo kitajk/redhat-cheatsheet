@@ -1,0 +1,242 @@
+[
+  {
+    "id": "lvm-management",
+    "category": "storage",
+    "categoryLabel": "Storage i LVM",
+    "title": "Tworzenie i rozszerzanie wolumenów LVM",
+    "commands": [
+      {
+        "desc": "Inicjalizacja Physical Volume (PV) oraz utworzenie grupy VG (PE = 16 MiB):",
+        "code": "pvcreate /dev/vdb1\nvgcreate -s 16M vg_data /dev/vdb1"
+      },
+      {
+        "desc": "Utworzenie wolumenu logicznego (LV) o rozmiarze 50 jednostek PE (800 MiB):",
+        "code": "lvcreate -l 50 -n lv_app vg_data"
+      },
+      {
+        "desc": "Rozszerzenie wolumenu o 2 GiB w locie wraz z systemem plików (flaga -r):",
+        "code": "lvextend -r -L +2G /dev/vg_data/lv_app"
+      },
+      {
+        "desc": "Weryfikacja struktury blokowej, grup VG oraz wolumenów LV:",
+        "code": "pvs && vgs && lvs\nlsblk -f"
+      }
+    ]
+  },
+  {
+    "id": "filesystems-fstab-autofs",
+    "category": "storage",
+    "categoryLabel": "Storage i LVM",
+    "title": "Systemy plików, Swap i Automount (autofs)",
+    "commands": [
+      {
+        "desc": "Sformatowanie wolumenu jako XFS i pobranie jego identyfikatora UUID:",
+        "code": "mkfs.xfs /dev/vg_data/lv_app\nblkid -s UUID -o value /dev/vg_data/lv_app"
+      },
+      {
+        "desc": "Trwałe montowanie w /etc/fstab oraz obowiązkowy test przed restartem:",
+        "code": "# Wpis w /etc/fstab:\nUUID=\"...\"  /mnt/app  xfs  defaults  0 0\n\nmkdir -p /mnt/app\nsystemctl daemon-reload && mount -a"
+      },
+      {
+        "desc": "Inicjalizacja przestrzeni Swap, wpis do /etc/fstab i aktywacja:",
+        "code": "mkswap /dev/vg_data/lv_swap\n# Wpis w /etc/fstab:\nUUID=\"...\"  none  swap  defaults  0 0\n\nsystemctl daemon-reload\nswapon -a && swapon --show"
+      },
+      {
+        "desc": "Automatyczne montowanie udziałów NFS przez autofs (mapowanie pośrednie):",
+        "code": "dnf install -y autofs nfs-utils\necho \"/shares  /etc/auto.shares\" > /etc/auto.master.d/shares.autofs\necho \"*  -rw,sync  server.lab:/exports/&\" > /etc/auto.shares\nsystemctl enable --now autofs"
+      }
+    ]
+  },
+  {
+    "id": "selinux-contexts-ports",
+    "category": "security",
+    "categoryLabel": "SELinux i Firewall",
+    "title": "Tryby pracy, konteksty i porty SELinux",
+    "commands": [
+      {
+        "desc": "Zmiana trybu SELinux w locie oraz trwała konfiguracja w /etc/selinux/config:",
+        "code": "getenforce\nsetenforce 1\n# Trwale w /etc/selinux/config -> SELINUX=enforcing\n# Wyłączenie w jądrze RHEL 9: grubby --update-kernel ALL --args selinux=0"
+      },
+      {
+        "desc": "Trwała reguła kontekstu SELinux dla niestandardowego katalogu WWW:",
+        "code": "semanage fcontext -a -t httpd_sys_content_t \"/srv/www(/.*)?\"\nrestorecon -Rv /srv/www"
+      },
+      {
+        "desc": "Przypisanie niestandardowego portu TCP 82 do polityki HTTP (-a lub -m):",
+        "code": "semanage port -l | grep http_port_t\nsemanage port -a -t http_port_t -p tcp 82"
+      },
+      {
+        "desc": "Wyszukanie i trwałe włączenie przełącznika logicznego (boolean) SELinux:",
+        "code": "semanage boolean -l | grep httpd\nsetsebool -P httpd_can_network_connect on"
+      }
+    ]
+  },
+  {
+    "id": "firewalld-configuration",
+    "category": "security",
+    "categoryLabel": "SELinux i Firewall",
+    "title": "Konfiguracja zapory sieciowej firewalld",
+    "commands": [
+      {
+        "desc": "Weryfikacja domyślnej strefy oraz aktywnych reguł:",
+        "code": "firewall-cmd --get-default-zone\nfirewall-cmd --list-all"
+      },
+      {
+        "desc": "Trwałe odblokowanie usługi sieciowej i przeładowanie zapory:",
+        "code": "firewall-cmd --permanent --add-service=http\nfirewall-cmd --reload"
+      },
+      {
+        "desc": "Trwałe otwarcie niestandardowego portu TCP 82 w zaporze:",
+        "code": "firewall-cmd --permanent --add-port=82/tcp\nfirewall-cmd --reload"
+      },
+      {
+        "desc": "Usunięcie portu z konfiguracji stałej i weryfikacja:",
+        "code": "firewall-cmd --permanent --remove-port=82/tcp\nfirewall-cmd --reload && firewall-cmd --list-ports"
+      }
+    ]
+  },
+  {
+    "id": "podman-rootless",
+    "category": "containers",
+    "categoryLabel": "Podman i Systemd",
+    "title": "Kontenery rootless w Podmanie",
+    "commands": [
+      {
+        "desc": "Prawidłowe logowanie na użytkownika (nie używaj 'su -', bo psuje sesję D-Bus):",
+        "code": "ssh anna@localhost\npodman login registry.redhat.io"
+      },
+      {
+        "desc": "Pobranie obrazu z użyciem pełnej nazwy kwalifikowanej (FQIN):",
+        "code": "podman pull registry.redhat.io/ubi9/httpd-24"
+      },
+      {
+        "desc": "Uruchomienie kontenera z mapowaniem portu oraz flagami SELinux i UID (:Z,U):",
+        "code": "mkdir -p ~/www\npodman run -d --name web_srv -p 8080:8080 \\\n  -v ~/www:/var/www/html:Z,U registry.redhat.io/ubi9/httpd-24"
+      },
+      {
+        "desc": "Weryfikacja kontenera, podgląd logów oraz wejście do powłoki:",
+        "code": "podman ps -a\npodman logs web_srv\npodman exec -it web_srv /bin/bash"
+      }
+    ]
+  },
+  {
+    "id": "systemd-user-services",
+    "category": "containers",
+    "categoryLabel": "Podman i Systemd",
+    "title": "Quadlet - Kontenery jako usługi systemd",
+    "commands": [
+      {
+        "desc": "Włączenie podtrzymania procesów użytkownika po wylogowaniu (linger):",
+        "code": "loginctl enable-linger anna\nloginctl show-user anna | grep Linger"
+      },
+      {
+        "desc": "Utworzenie katalogu konfiguracyjnego Quadlet (zalogowany przez SSH jako użytkownik):",
+        "code": "mkdir -p ~/.config/containers/systemd"
+      },
+      {
+        "desc": "Plik jednostki ~/.config/containers/systemd/web.container:",
+        "code": "[Unit]\nDescription=Kontener Apache HTTP\nAfter=network-online.target\n\n[Container]\nContainerName=web_srv\nImage=registry.redhat.io/ubi9/httpd-24\nPublishPort=8080:8080\nVolume=%h/www:/var/www/html:Z,U\n\n[Service]\nRestart=always\n\n[Install]\nWantedBy=default.target"
+      },
+      {
+        "desc": "Test składni Quadlet (dry-run), przeładowanie generatora i start usługi:",
+        "code": "/usr/libexec/podman/quadlet -dryrun -user\nsystemctl --user daemon-reload\nsystemctl --user start web.service\nsystemctl --user status web.service"
+      }
+    ]
+  },
+  {
+    "id": "users-groups-passwords",
+    "category": "users",
+    "categoryLabel": "Użytkownicy i Uprawnienia",
+    "title": "Użytkownicy, grupy, sudoers i polityka haseł",
+    "commands": [
+      {
+        "desc": "Utworzenie grupy oraz użytkownika z grupą dodatkową (-G) i powłoką:",
+        "code": "groupadd devops\nuseradd -G devops -s /bin/bash anna\npasswd anna"
+      },
+      {
+        "desc": "Konto serwisowe bez prawa interaktywnego logowania do powłoki:",
+        "code": "useradd -r -s /usr/sbin/nologin app_svc"
+      },
+      {
+        "desc": "Polityka wygasania hasła (zmiana co 90 dni, ostrzeżenie 7 dni, blokada konta):",
+        "code": "chage -M 90 -W 7 -E 2027-12-31 anna\nchage -l anna"
+      },
+      {
+        "desc": "Bezpieczne nadanie uprawnień sudo bez hasła dla grupy devops przez visudo:",
+        "code": "visudo -f /etc/sudoers.d/devops\n# Wpis wewnątrz pliku:\n%devops  ALL=(ALL)  NOPASSWD: ALL"
+      }
+    ]
+  },
+  {
+    "id": "permissions-sgid-acl",
+    "category": "users",
+    "categoryLabel": "Użytkownicy i Uprawnienia",
+    "title": "Uprawnienia specjalne (SGID) oraz listy ACL",
+    "commands": [
+      {
+        "desc": "Katalog współdzielony z bitem SGID (dziedziczenie grupy właściciela):",
+        "code": "mkdir -p /srv/projekt\nchown :devops /srv/projekt\nchmod 2770 /srv/projekt"
+      },
+      {
+        "desc": "Nadanie uprawnień ACL dla użytkownika oraz odczyt listy kontroli dostępu:",
+        "code": "setfacl -m u:anna:rw /srv/projekt/raport.txt\ngetfacl /srv/projekt/raport.txt"
+      },
+      {
+        "desc": "Ustawienie uprawnień ACL do katalogu wraz z regułą domyślną (dziedziczoną):",
+        "code": "setfacl -m g:devops:rwx,d:g:devops:rwx /srv/projekt"
+      },
+      {
+        "desc": "Wyszukiwanie plików z ustawionym bitem SUID w całym systemie:",
+        "code": "find / -perm /4000 -type f 2>/dev/null"
+      }
+    ]
+  },
+  {
+    "id": "networking-nmcli",
+    "category": "network",
+    "categoryLabel": "Sieć i Rozruch",
+    "title": "Konfiguracja sieci przez nmcli oraz hostname",
+    "commands": [
+      {
+        "desc": "Sprawdzenie dokładnych nazw profili połączeń oraz stanu interfejsów:",
+        "code": "nmcli con show\nnmcli dev status"
+      },
+      {
+        "desc": "Ustawienie statycznego adresu IPv4, bramy oraz DNS na istniejącym profilu:",
+        "code": "nmcli con mod \"enp1s0\" ipv4.addresses 192.168.122.50/24 \\\n  ipv4.gateway 192.168.122.1 ipv4.dns 8.8.8.8 ipv4.method manual\nnmcli con up \"enp1s0\""
+      },
+      {
+        "desc": "Dopisanie dodatkowego adresu IP bez nadpisywania głównej adresacji (+ipv4):",
+        "code": "nmcli con mod \"enp1s0\" +ipv4.addresses 192.168.122.51/24\nnmcli con up \"enp1s0\""
+      },
+      {
+        "desc": "Trwała zmiana nazwy hosta (FQDN) oraz weryfikacja rozwiązywania nazw i portów:",
+        "code": "hostnamectl set-hostname node1.lab.example.com\ngetent hosts node1.lab.example.com\nss -tulpn"
+      }
+    ]
+  },
+  {
+    "id": "boot-recovery-cron-tuned",
+    "category": "network",
+    "categoryLabel": "Sieć i Rozruch",
+    "title": "Reset hasła root, Cron, Targety i Tuned",
+    "commands": [
+      {
+        "desc": "Reset hasła root z GRUB (po dopisaniu rd.break do linii linux):",
+        "code": "mount -o remount,rw /sysroot\nchroot /sysroot\npasswd root\nfixfiles -F onboot\nexit\nexit"
+      },
+      {
+        "desc": "Alternatywny reset hasła root w RHEL 9 (zamiana 'ro' na 'rw init=/bin/bash' w GRUB):",
+        "code": "passwd root\nfixfiles -F onboot\nexec /sbin/init"
+      },
+      {
+        "desc": "Zmiana domyślnego targetu systemd oraz zadanie cykliczne cron użytkownika:",
+        "code": "systemctl set-default multi-user.target\ncrontab -u anna -e\n# 30 14 * * * /usr/bin/logger \"Backup wykonany\""
+      },
+      {
+        "desc": "Zarządzanie profilami wydajnościowymi systemu za pomocą tuned-adm:",
+        "code": "tuned-adm active\ntuned-adm recommend\ntuned-adm profile virtual-guest"
+      }
+    ]
+  }
+]
